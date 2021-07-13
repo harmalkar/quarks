@@ -1,1 +1,1 @@
-Monte Carlo simulation of gluon interactions between static quarks.
+Monte Carlo simulation of gluon interactions between static quarks. Lecture notes are aimed at a graduate-level course in computational nuclear theory and contain an exercise in writing local update methods for Monte Carlo simulations - see code_solution.pdf and implemented in code/update.cpp for the solution.

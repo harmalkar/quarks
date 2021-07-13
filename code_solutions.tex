@@ -1,0 +1,193 @@
+\title{Simulation of SU(3) Yang-Mills Theory on the Lattice: Solution}
+\author{Author: Siddhartha Harmalkar}
+%\date{Editor: Yukari Yamauchi}
+
+\documentclass[11pt]{article}
+
+\usepackage[utf8]{inputenc}
+
+\usepackage[a4paper]{geometry}		% for the page margins
+\usepackage{slashed}														% for slashed filed operators
+\usepackage{simplewick}													% for the Wick contractions
+\usepackage{subfiles}
+\usepackage{braket, amsmath, graphicx}
+\usepackage{enumerate}
+
+\usepackage{bm}
+\usepackage{amsmath}
+\usepackage{relsize}														% for the mathlarger
+\usepackage{cancel}
+
+\DeclareMathOperator{\tr}{tr}
+
+
+
+
+\newcommand{\haddamard}{\frac{1}{\sqrt{2}}\begin{pmatrix}1 & 1\\1 & -1\end{pmatrix}}
+\newcommand{\identitytwo}{\begin{pmatrix}1 & 0\\0 & 1\end{pmatrix}}
+\newcommand{\beq}{\begin{equation} \begin{aligned}}
+\newcommand{\eeq}{\end{aligned} \end{equation}}
+
+%\def\beq{\begin{equation}}
+%\def\eeq{\end{equation}}
+%\def\beqs#1\eeqs{\beq\begin{split} #1 \end{split}\eeq}
+
+
+
+% left vector definitions
+\usepackage{graphicx,accents}
+
+\makeatletter
+\DeclareRobustCommand{\cev}[1]{%
+  \mathpalette\do@cev{#1}%
+}
+\newcommand{\do@cev}[2]{%
+  \fix@cev{#1}{+}%
+  \reflectbox{$\m@th#1\vec{\reflectbox{$\fix@cev{#1}{-}\m@th#1#2\fix@cev{#1}{+}$}}$}%
+  \fix@cev{#1}{-}%
+}
+\newcommand{\fix@cev}[2]{%
+  \ifx#1\displaystyle
+    \mkern#23mu
+  \else
+    \ifx#1\textstyle
+      \mkern#23mu
+    \else
+      \ifx#1\scriptstyle
+        \mkern#22mu
+      \else
+        \mkern#22mu
+      \fi
+    \fi
+  \fi
+}
+
+\usepackage{latexsym}
+
+% For captions (Sid)
+\usepackage{caption}
+
+% For highlighting what's left to edit (not necessary for compilation) (Sid)
+%\usepackage{xcolor}
+\usepackage{soul}
+
+% For identity matrix symbol (Sid)
+%\usepackage{bbold}
+\usepackage{amssymb}
+\usepackage{dsfont}
+\usepackage{bbm}
+
+% Packages for timeline (Sid)
+\usepackage{tikz}
+\usepackage{hyperref} 
+\hypersetup{
+     colorlinks = true,
+     linkcolor = black,
+     %anchorcolor = blue,
+     citecolor = blue,
+     %filecolor = blue,
+     urlcolor = blue
+     }
+\usepackage{calc} % for simple arithmetic
+\tikzset{>=latex} % for LaTeX arrow head
+
+% split figures into pages
+%\usepackage[active,tightpage]{preview}
+%\PreviewEnvironment{tikzpicture}
+%\setlength\PreviewBorder{1pt}%
+
+%Counter for exercise numbers (Sid)
+\newcounter{exerciseno}
+\DeclareRobustCommand{\exCnt}{\refstepcounter{exerciseno}\theexerciseno}
+
+%Figure placement (Sid)
+\usepackage{float}
+
+% For code (Sid): taken from https://imada.sdu.dk/~slars10/latex/
+
+\usepackage{xcolor}
+\usepackage{bold-extra}
+\usepackage{listings}
+
+\lstset{
+	language=c,
+	basicstyle={\footnotesize\ttfamily},
+	keywordstyle=\bfseries,
+	commentstyle=\color{black!75},
+	stringstyle=\slshape,
+	numberstyle=\footnotesize,
+	numbers=none,
+	showstringspaces=false,
+	breaklines=true,
+	tabsize=4,
+	frame=tb,
+	columns=fullflexible,
+	captionpos=b,
+	belowcaptionskip=1pt
+}
+
+\usepackage{caption}
+\captionsetup[lstlisting]{font={small,tt}}
+% Taken from https://tex.stackexchange.com/questions/70214/label-a-lstlisting-listing-in-the-lower-right-corner:
+
+\usepackage{xcolor}
+\usepackage{adjustbox,tikz}
+\definecolor{light-gray}{gray}{0.95}
+
+\makeatletter
+\newcommand{\mylabel}[1]{\color{blue}{\footnotesize\bf\ttfamily #1}\hspace{1em}}    
+
+\lstnewenvironment{code}[1]{
+    \lstset{
+        ,frame=single
+        ,xleftmargin=2em
+        ,xrightmargin=2em
+        ,backgroundcolor=\color{light-gray}
+        ,belowskip=0pt,
+    }%
+    \def\code@arg{#1}%
+    \setbox0\hbox\bgroup%
+}
+{%
+    \egroup\usebox0% printout the listing
+    \raisebox{\dimexpr-\dp0+\ht\strutbox\relax-0.5em}{% move near bottom of listing
+        \makebox[\dimexpr-\wd0+\lst@linewidth\relax+1.0em][r]{% makebox to right border
+            \mylabel{\code@arg}%
+        }%
+    }%
+}
+\makeatother
+
+
+
+\begin{document}
+
+\maketitle
+
+\section{Exercise 3}
+
+\begin{code}{metropolis.cpp}
+int update(ranlux48& rnd) {
+        Matrix3cd updater, neighbors;
+        int accepted = 0;
+        for(int i = 0; i < V; i++) {
+                for(int mu = 0; mu < D; mu++) {
+                        neighbors = Matrix3cd::Zero();
+                        for(int nu = 0; nu < D; nu++){
+                                if(nu == mu) continue;
+                                neighbors += U[step(i,mu,1)*D+nu]*(U[step(i,nu,1)*D+mu].inverse())*(U[i*D+nu].inverse());
+                                neighbors += U[step(step(i,mu,1),nu,-1)*D+nu].inverse()*(U[step(i,nu,-1)*D+mu].inverse())*U[step(i,nu,-1)*D+nu];
+                        }
+                        updater = x[idist(rnd)];
+                        double prob = exp(beta/3*((updater-Matrix3cd::Identity())*U[i*D+mu]*neighbors).trace().real());
+                        if(rdist(rnd) < prob){
+                                accepted++;
+                                U[i*D+mu] = updater*U[i*D+mu];
+                        }
+                }
+        }
+        return accepted;
+}
+\end{code}
+
+\end{document}  
